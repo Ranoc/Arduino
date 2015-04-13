@@ -14,7 +14,7 @@
 	#include "utility/LowPower.h"
 #else
 	#include <avr/sleep.h>
-	#include <avr/interrupt.h>
+	#include <utility/PinChangeInterrupt.h>
 	#ifndef cbi
 		#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 	#endif
@@ -547,8 +547,7 @@ bool MySensor::sleep(uint8_t interrupt, uint8_t mode, unsigned long ms) {
 #ifndef TINY
 	attachInterrupt(interrupt, wakeUp, mode);
 #else
-	sbi(GIMSK,PCIE); // Turn on Pin Change interrupt
-	sbi(PCMSK,PCINT4); // Which pins are affected by the interrupt
+	attachPcInterrupt(interrupt, wakeUp, mode);
 #endif
 	if (ms>0) {
 		pinIntTrigger = 0;
@@ -576,15 +575,11 @@ bool MySensor::sleep(uint8_t interrupt, uint8_t mode, unsigned long ms) {
 	}
 #ifndef TINY
 	detachInterrupt(interrupt);
+#else
+	detachPcInterrupt(interrupt);
 #endif
 	return pinTriggeredWakeup;
 }
-
-#ifdef TINY
-ISR(PCINT4_vect) {
-	cbi(PCMSK,PCINT4); // Turn off PB4 as interrupt pin
-}
-#endif
 
 
 #ifndef TINY
